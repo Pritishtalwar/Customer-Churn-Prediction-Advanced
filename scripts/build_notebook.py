@@ -4,6 +4,7 @@ import nbformat as nbf
 
 
 ROOT = Path(__file__).resolve().parents[1]
+OUTPUT = ROOT / "notebooks" / "churn_analysis_summary.ipynb"
 notebook = nbf.v4.new_notebook()
 notebook["metadata"] = {
     "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
@@ -21,7 +22,7 @@ def code(text):
 
 md("# Customer Churn Prediction")
 md("## 1. Project Introduction")
-md("This project predicts customer churn using the verified Kaggle Customer Churn Dataset. The workflow prevents test-set leakage: preprocessing, model selection, tuning and threshold selection use training/validation data only.")
+md("This project predicts customer churn using the Kaggle-sourced working CSV (64,374 rows × 12 columns). The stratified test partition is kept out of preprocessing, model selection, tuning and threshold selection, then used for evaluation after selection.")
 
 md("## 2. Library Imports")
 code("""from pathlib import Path
@@ -46,6 +47,7 @@ sns.set_theme(style="whitegrid")
 """)
 
 md("## 3. Dataset Loading")
+md("The working data file has 64,374 rows and 12 columns. The dataset source is linked in the README; its license is unverified, so check the source terms before redistribution.")
 code("""ROOT = Path.cwd().resolve()
 if ROOT.name == "notebooks":
     ROOT = ROOT.parent
@@ -230,5 +232,5 @@ print("ROC-AUC:", f"{final['roc_auc']:.4f}")
 print("90% achieved:", metrics["target_90_percent_achieved"])
 """)
 
-notebook["cells"] = notebook["cells"]
-nbf.write(notebook, ROOT / "notebooks" / "churn_analysis.ipynb")
+nbf.write(notebook, OUTPUT)
+print(OUTPUT)

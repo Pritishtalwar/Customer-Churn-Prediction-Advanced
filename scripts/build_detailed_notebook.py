@@ -38,24 +38,25 @@ The analysis follows a leakage-safe machine-learning workflow:
 1. Verify and understand the original data.
 2. Audit quality and target relationships.
 3. Perform exploratory data analysis.
-4. Preserve a fully untouched test set.
+4. Reserve a stratified test partition from model, parameter and threshold selection.
 5. Compare eleven machine-learning models.
 6. Use out-of-fold predictions to select a probability threshold.
 7. Refit the selected pipeline on the full training split.
-8. Evaluate the selected pipeline once on the untouched test set.
+8. Evaluate the selected pipeline on the held-out test partition after selection.
 
-The notebook deliberately distinguishes cross-validation, validation, out-of-fold threshold selection and final test metrics.
+The fixed test partition is re-evaluated during reproducibility runs, so it is a held-out benchmark rather than a one-time confirmatory evaluation. Cross-validation, validation, out-of-fold threshold selection and final test metrics are reported separately.
 """)
 
 md("## 1. Dataset and Business Objective")
 md("""
-The verified Kaggle Customer Churn Dataset contains customer demographics and account information.
+The Kaggle-sourced working CSV contains 64,374 rows and 12 columns of customer demographics and account information.
 The machine-learning objective is binary classification:
 
 - `0` means the customer is likely to stay.
 - `1` means the customer is likely to churn.
 
 `CustomerID` is an identifier, not a behavioral predictor, and is excluded from every model.
+The dataset's current license could not be verified from the source metadata; see the README before redistributing the CSV.
 """)
 
 md("## 2. Import Libraries")
@@ -90,8 +91,8 @@ MODEL_PATH = ROOT / "models" / "churn_model.pkl"
 METRICS_PATH = ROOT / "model_metrics.json"
 COMPARISON_PATH = ROOT / "model_comparison.csv"
 
-print("Project root:", ROOT)
-print("Dataset:", DATASET_PATH)
+print("Project root: <repository root>")
+print("Dataset: dataset/customer_churn.csv")
 """)
 
 md("## 4. Load the Original Dataset")
@@ -197,7 +198,8 @@ display((target_counts / len(df)).to_frame("Proportion"))
 
 fig, ax = plt.subplots(figsize=(7, 5))
 target_counts.plot(kind="bar", ax=ax, color=["#94a3b8", "#ef4444"])
-ax.set_xticklabels(["Stay", "Churn"], rotation=0)
+ax.set_xticks([0, 1], labels=["Stay", "Churn"])
+ax.tick_params(axis="x", rotation=0)
 ax.set_title("Churn Distribution")
 ax.set_ylabel("Customers")
 plt.tight_layout()
@@ -218,7 +220,7 @@ plt.show()
 md("## 20. Age Boxplot")
 code("""fig, ax = plt.subplots(figsize=(8, 5))
 sns.boxplot(data=df, x="Churn", y="Age", ax=ax)
-ax.set_xticklabels(["Stay", "Churn"])
+ax.set_xticks([0, 1], labels=["Stay", "Churn"])
 ax.set_title("Age by Churn")
 plt.tight_layout()
 plt.show()
@@ -235,7 +237,7 @@ plt.show()
 md("## 22. Tenure vs Churn")
 code("""fig, ax = plt.subplots(figsize=(8, 5))
 sns.boxplot(data=df, x="Churn", y="Tenure", ax=ax)
-ax.set_xticklabels(["Stay", "Churn"])
+ax.set_xticks([0, 1], labels=["Stay", "Churn"])
 ax.set_title("Tenure by Churn")
 plt.tight_layout()
 plt.show()
@@ -427,13 +429,13 @@ X_train_full, X_test, y_train_full, y_test = train_test_split(
 )
 
 print("Full training rows:", X_train_full.shape[0])
-print("Untouched test rows:", X_test.shape[0])
+print("Held-out test rows:", X_test.shape[0])
 """)
 
-md("## 41. Keep the Test Set Untouched")
+md("## 41. Reserve the Test Split")
 md("""
-The test set is not used to select models, tune hyperparameters or choose thresholds.
-It is used exactly once for the final evaluation.
+The test split is not used to select models, tune hyperparameters or choose thresholds.
+It is evaluated after selection. Re-running the training/evaluation workflow reuses this fixed split, so its result is not a one-time independent benchmark.
 """)
 
 md("## 42. Dummy Baseline")
@@ -447,7 +449,7 @@ baseline_prediction = baseline.predict(X_test)
 print("Dummy baseline accuracy:", accuracy_score(y_test, baseline_prediction))
 """)
 
-md("## 43. Execute the Eleven-Model Training Script")
+md("## 43. Train Models and Save Final Evaluation")
 code("""train_result = subprocess.run(
     [sys.executable, str(ROOT / "scripts" / "train_models.py")],
     cwd=ROOT,
@@ -456,6 +458,22 @@ code("""train_result = subprocess.run(
     text=True,
 )
 print(train_result.stdout[-14000:])
+evaluation_result = subprocess.run(
+    [sys.executable, str(ROOT / "scripts" / "evaluate_model.py")],
+    cwd=ROOT,
+    check=True,
+    capture_output=True,
+    text=True,
+)
+print(evaluation_result.stdout[-2500:])
+audit_result = subprocess.run(
+    [sys.executable, str(ROOT / "scripts" / "data_leakage_audit.py")],
+    cwd=ROOT,
+    check=True,
+    capture_output=True,
+    text=True,
+)
+print(audit_result.stdout[-3500:])
 """)
 
 md("## 44. Model Comparison Table")
@@ -512,7 +530,7 @@ These metrics measure different stages:
 - **Cross-validation:** folds inside the 30,000-row subset.
 - **Validation:** 20% holdout inside the 80% training split.
 - **Out-of-fold threshold:** 5-fold probabilities on the full 80% training split.
-- **Test:** 12,875 rows evaluated once after model and threshold selection.
+- **Held-out test:** 12,875 rows evaluated after model and threshold selection; the fixed split is reused in reproducibility runs.
 """)
 
 md("## 50. Hyperparameter Tuning")
@@ -570,7 +588,7 @@ ConfusionMatrixDisplay.from_predictions(
     cmap="Blues",
     ax=ax,
 )
-ax.set_title("Final Untouched Test Confusion Matrix")
+ax.set_title("Final Held-Out Test Confusion Matrix")
 plt.tight_layout()
 plt.show()
 """)
@@ -582,7 +600,7 @@ code("""print(classification_report(y_test, prediction, target_names=["Stay", "C
 md("## 58. ROC Curve")
 code("""fig, ax = plt.subplots(figsize=(7, 6))
 RocCurveDisplay.from_predictions(y_test, probability, ax=ax)
-ax.set_title("Final Untouched Test ROC Curve")
+ax.set_title("Final Held-Out Test ROC Curve")
 plt.tight_layout()
 plt.show()
 """)
@@ -590,7 +608,7 @@ plt.show()
 md("## 59. Precision-Recall Curve")
 code("""fig, ax = plt.subplots(figsize=(7, 6))
 PrecisionRecallDisplay.from_predictions(y_test, probability, ax=ax)
-ax.set_title("Final Untouched Test Precision-Recall Curve")
+ax.set_title("Final Held-Out Test Precision-Recall Curve")
 plt.tight_layout()
 plt.show()
 """)
@@ -642,7 +660,7 @@ print("Reloaded model test predictions:", smoke_predictions.tolist())
 md("## 65. Conclusion")
 md("""
 The final selected pipeline is LightGBM with an out-of-fold-selected threshold.
-The untouched test set reported near-perfect accuracy.
+The held-out test split reported near-perfect accuracy. It was re-evaluated during development, so it should not be described as a one-time independent benchmark.
 
 The model result should be reported honestly with:
 
@@ -655,7 +673,19 @@ The model result should be reported honestly with:
 This is the complete end-to-end analysis; deployment decisions should not rely on accuracy alone.
 """)
 
-nb["cells"] = nb["cells"]
+md("## 66. Dataset Ordering and Split-Overlap Audit")
+md("CustomerID is excluded from model inputs, but churn rates shift sharply across CustomerID deciles. The CSV does not document label generation, so this pattern is a source-ordering or target-construction concern rather than proof of direct leakage.")
+code("""leakage_audit = json.loads((ROOT / "data_leakage_audit.json").read_text(encoding="utf-8"))
+audit = leakage_audit["target_and_feature_relationships"]
+integrity = leakage_audit["record_integrity"]
+print("CustomerID in model inputs:", leakage_audit["target_and_feature_relationships"]["customer_id_in_model_inputs"])
+print("CustomerID/churn correlation on training rows:", round(audit["customer_id_churn_correlation_descriptive_only_training_rows"], 3))
+print("Training churn rate by CustomerID decile:", audit["churn_rate_by_customer_id_decile"])
+print("Train/test ID overlap:", integrity["train_test_customer_id_overlap"])
+print("Train/test feature-row overlap:", integrity["train_test_feature_vector_overlap"])
+print("Finding:", audit["interpretation"])
+""")
+
 NOTEBOOK.parent.mkdir(parents=True, exist_ok=True)
 nbf.write(nb, NOTEBOOK)
 print(NOTEBOOK)

@@ -8,8 +8,8 @@ An end-to-end telecom customer churn project using a Kaggle-sourced customer chu
 - Source page: [Kaggle Customer Churn Dataset](https://www.kaggle.com/datasets/muhammadshahidazeem/customer-churn-dataset)
 - Dataset license: **Unverified.** The repository does not include license metadata, and the Kaggle source page did not expose readable license details during the final audit. Do not assume public-domain or redistribution rights; verify the current Kaggle dataset license before republishing the CSV.
 - Repository code license: **Unspecified.** No top-level `LICENSE` file is present.
-- Verified project dataset: 64,374 rows
-- 12 source columns
+- Working file: `dataset/customer_churn.csv` — **64,374 rows × 12 columns**
+- The project's actual 80:20 stratified split contains 51,499 training rows and 12,875 test rows.
 - Target: `Churn`
 - Identifier: `CustomerID`
 - No duplicate rows
@@ -17,7 +17,7 @@ An end-to-end telecom customer churn project using a Kaggle-sourced customer chu
 - No missing values
 - CustomerID is excluded from model features
 
-The 505,207-row value resulted from accidentally combining the 440,833-row training-master and 64,374-row testing-master CSV files. This project uses the original testing-master data as the working dataset and performs an independent 80:20 stratified split.
+All project row counts and results refer to the 64,374-row CSV present in `dataset/`.
 
 ## Technology
 
@@ -32,9 +32,29 @@ The 505,207-row value resulted from accidentally combining the 440,833-row train
 - Streamlit
 - Jupyter
 
+## Project Files
+
+| Path | Purpose |
+|---|---|
+| `dataset/customer_churn.csv` | Working source dataset (64,374 × 12) |
+| `notebooks/churn_analysis.ipynb` | Data exploration, model evaluation and findings |
+| `scripts/build_detailed_notebook.py` | Regenerate the complete notebook above |
+| `scripts/build_notebook.py` | Generate a shorter companion notebook at `notebooks/churn_analysis_summary.ipynb` |
+| `scripts/train_models.py` | 11-model comparison, tuning, final fit and metrics |
+| `scripts/evaluate_model.py` | Re-evaluate the saved model and dummy baseline on the fixed holdout |
+| `scripts/data_leakage_audit.py` | Training/validation-only importance and leakage audit |
+| `scripts/test_app_ui.py` | Streamlit single-customer, batch, download and invalid-input checks |
+| `scripts/eda_analysis.py` | Regenerate EDA tables and figures under `eda/` |
+| `scripts/analyze_target_pattern.py` | Inspect target structure and simple feature rules |
+| `app/app.py` | Streamlit single-customer and batch prediction UI |
+| `models/churn_model.pkl` | Fitted prediction pipeline |
+| `model_metrics.json`, `model_comparison.csv` | Final metrics and experiment comparison |
+| `evaluation_results.json`, `data_leakage_audit.json` | Saved evaluation and audit reports |
+| `feature_importance*.csv`, `permutation_importance_report.csv`, `univariate_target_signal_report.csv` | Feature diagnostic outputs |
+
 ## Workflow
 
-1. Verify the original Kaggle dataset
+1. Load and audit the working Kaggle-sourced CSV
 2. Audit data quality and target balance
 3. Perform EDA
 4. Split 80:20 with `random_state=42`
@@ -145,7 +165,20 @@ Importance reports: `feature_importance_report.csv` contains encoded-column spli
 ## Run Training
 
 ```powershell
+python -m pip install -r requirements.txt
 python scripts/train_models.py
+```
+
+Run commands from the repository root so project-relative paths resolve correctly.
+
+## Run Evaluation and Audits
+
+```powershell
+python scripts/evaluate_model.py
+python scripts/data_leakage_audit.py
+python scripts/analyze_target_pattern.py
+python scripts/test_app_predictions.py
+python scripts/test_app_ui.py
 ```
 
 ## Run EDA

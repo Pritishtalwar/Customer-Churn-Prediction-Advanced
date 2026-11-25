@@ -55,7 +55,6 @@ for depth in (1, 2, 3, 4, 5):
         ),
     }
 
-support_ge5 = (df["Support Calls"] >= 5).astype(int)
 payment_delay_thresholds = {}
 for threshold in (10, 15, 20, 25):
     payment_delay_thresholds[str(threshold)] = float(
@@ -67,9 +66,30 @@ numeric_correlations = df.select_dtypes(include=[np.number]).corr()["Churn"].dro
     errors="ignore",
 ).sort_values().to_dict()
 
+train_rows = df.loc[X_train.index]
+customer_id_deciles = pd.qcut(
+    train_rows["CustomerID"], 10, labels=False, duplicates="drop"
+)
+customer_id_churn_rates = train_rows.assign(
+    customer_id_decile=customer_id_deciles
+).groupby("customer_id_decile", observed=True)["Churn"].agg(["mean", "size"])
+
 result = {
     "holdout_split": "20% validation, random_state=42",
     "no_customer_id_used": True,
+    "identifier_audit_training_rows": {
+        "customer_id_in_model_features": False,
+        "customer_id_churn_correlation": float(
+            train_rows["CustomerID"].corr(train_rows["Churn"])
+        ),
+        "churn_rate_by_customer_id_decile": {
+            str(int(decile)): {
+                "churn_rate": float(row["mean"]),
+                "rows": int(row["size"]),
+            }
+            for decile, row in customer_id_churn_rates.iterrows()
+        },
+    },
     "exact_duplicate_feature_rows": int(
         X.duplicated().sum()
     ),
@@ -82,7 +102,7 @@ result = {
     ),
     "numeric_target_correlations": numeric_correlations,
     "simple_support_calls_ge5_accuracy": float(
-        accuracy_score(y, support_ge5)
+        accuracy_score(y, (df["Support Calls"] >= 5).astype(int))
     ),
     "payment_delay_rule_accuracies": payment_delay_thresholds,
     "shallow_decision_tree_results": depth_results,
@@ -90,8 +110,11 @@ result = {
         "The dataset contains strong rule-like relationships, especially in "
         "Support Calls and Payment Delay. This is evidence of strong "
         "target structure, not by itself evidence of target leakage. "
-        "CustomerID is excluded and no conflicting duplicate feature/label "
-        "groups were found."
+        "CustomerID is excluded, but its strong training-split association "
+        "with Churn is an ordering/provenance concern. The source contains no "
+        "target-generation logic, so direct or indirect target construction "
+        "cannot be confirmed or ruled out. No conflicting duplicate "
+        "feature/label groups were found."
     ),
 }
 

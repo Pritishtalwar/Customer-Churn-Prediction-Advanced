@@ -1,6 +1,52 @@
 {
   "holdout_split": "20% validation, random_state=42",
   "no_customer_id_used": true,
+  "identifier_audit_training_rows": {
+    "customer_id_in_model_features": false,
+    "customer_id_churn_correlation": 0.5295823738621646,
+    "churn_rate_by_customer_id_decile": {
+      "0": {
+        "churn_rate": 0.2570873786407767,
+        "rows": 5150
+      },
+      "1": {
+        "churn_rate": 0.26601941747572816,
+        "rows": 5150
+      },
+      "2": {
+        "churn_rate": 0.25650485436893206,
+        "rows": 5150
+      },
+      "3": {
+        "churn_rate": 0.25281553398058254,
+        "rows": 5150
+      },
+      "4": {
+        "churn_rate": 0.26174757281553396,
+        "rows": 5150
+      },
+      "5": {
+        "churn_rate": 0.2577199456205088,
+        "rows": 5149
+      },
+      "6": {
+        "churn_rate": 0.2611650485436893,
+        "rows": 5150
+      },
+      "7": {
+        "churn_rate": 0.9236893203883495,
+        "rows": 5150
+      },
+      "8": {
+        "churn_rate": 1.0,
+        "rows": 5150
+      },
+      "9": {
+        "churn_rate": 1.0,
+        "rows": 5150
+      }
+    }
+  },
   "exact_duplicate_feature_rows": 0,
   "conflicting_duplicate_feature_labels": 0,
   "numeric_target_correlations": {
@@ -42,5 +88,5 @@
       "validation_accuracy": 0.9555728155339805
     }
   },
-  "interpretation": "The dataset contains strong rule-like relationships, especially in Support Calls and Payment Delay. This is evidence of strong target structure, not by itself evidence of target leakage. CustomerID is excluded and no conflicting duplicate feature/label groups were found."
+  "interpretation": "The dataset contains strong rule-like relationships, especially in Support Calls and Payment Delay. This is evidence of strong target structure, not by itself evidence of target leakage. CustomerID is excluded, but its training-only ID/churn correlation is 0.530; training-split churn rates by ascending ID decile are 25.7%, 26.6%, 25.7%, 25.3%, 26.2%, 25.8%, 26.1%, 92.4%, 100.0%, 100.0%. The source contains no target-generation logic, so direct or indirect target construction cannot be confirmed or ruled out. No conflicting duplicate feature/label groups were found."
 }

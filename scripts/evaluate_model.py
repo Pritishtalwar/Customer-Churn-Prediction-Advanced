@@ -1,4 +1,4 @@
-"""Evaluate the saved model once on the project's fixed untouched test split."""
+"""Evaluate the saved model on the project's fixed held-out test split."""
 
 import json
 from pathlib import Path

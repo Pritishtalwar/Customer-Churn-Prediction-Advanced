@@ -20,7 +20,6 @@ from sklearn.tree import DecisionTreeClassifier
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "dataset" / "customer_churn.csv"
 MODEL_PATH = ROOT / "models" / "churn_model.pkl"
-METRICS_PATH = ROOT / "model_metrics.json"
 AUDIT_PATH = ROOT / "data_leakage_audit.json"
 NATIVE_IMPORTANCE_PATH = ROOT / "feature_importance_report.csv"
 PERMUTATION_PATH = ROOT / "permutation_importance_report.csv"
@@ -34,7 +33,7 @@ y = df["Churn"]
 
 # Reproduce the project split first, then reserve validation rows within its
 # training partition. No test rows or labels enter model/importance analysis.
-X_train_full, X_test, y_train_full, y_test = train_test_split(
+X_train_full, X_test, y_train_full, _y_test = train_test_split(
     X, y, test_size=0.20, random_state=RANDOM_STATE, stratify=y
 )
 X_fit, X_validation, y_fit, y_validation = train_test_split(

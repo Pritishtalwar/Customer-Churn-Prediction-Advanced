@@ -27,7 +27,6 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     roc_auc_score,
-    make_scorer,
 )
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import (
@@ -372,7 +371,7 @@ def metric_dict(prediction, probability):
 final_metrics = metric_dict(test_prediction, test_probability)
 baseline_metrics = metric_dict(baseline_prediction, baseline_probability)
 
-# Feature diagnostics use training rows only; the untouched test set is never
+# Feature diagnostics use training rows only; the held-out test set is never
 # consulted for feature selection or interpretation.
 permutation = permutation_importance(
     final_model,
