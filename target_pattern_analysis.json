@@ -1,0 +1,46 @@
+{
+  "holdout_split": "20% validation, random_state=42",
+  "no_customer_id_used": true,
+  "exact_duplicate_feature_rows": 0,
+  "conflicting_duplicate_feature_labels": 0,
+  "numeric_target_correlations": {
+    "Usage Frequency": -0.11509830085414229,
+    "Total Spend": -0.07886737880830706,
+    "Last Interaction": -0.002818027024172096,
+    "Age": 0.06345696261769648,
+    "Tenure": 0.1953272236421314,
+    "Support Calls": 0.3046311367131653,
+    "CustomerID": 0.5298315536981277,
+    "Payment Delay": 0.5573857149857263
+  },
+  "simple_support_calls_ge5_accuracy": 0.6611054152297512,
+  "payment_delay_rule_accuracies": {
+    "10": 0.6662472426756144,
+    "15": 0.7660390841022773,
+    "20": 0.7613943517569205,
+    "25": 0.6632336036287942
+  },
+  "shallow_decision_tree_results": {
+    "1": {
+      "training_accuracy": 0.7858405017573157,
+      "validation_accuracy": 0.7850097087378641
+    },
+    "2": {
+      "training_accuracy": 0.8180353016563429,
+      "validation_accuracy": 0.8207378640776699
+    },
+    "3": {
+      "training_accuracy": 0.8886774500475737,
+      "validation_accuracy": 0.8916504854368932
+    },
+    "4": {
+      "training_accuracy": 0.9418046952368007,
+      "validation_accuracy": 0.9425242718446601
+    },
+    "5": {
+      "training_accuracy": 0.9571836346336822,
+      "validation_accuracy": 0.9555728155339805
+    }
+  },
+  "interpretation": "The dataset contains strong rule-like relationships, especially in Support Calls and Payment Delay. This is evidence of strong target structure, not by itself evidence of target leakage. CustomerID is excluded and no conflicting duplicate feature/label groups were found."
+}

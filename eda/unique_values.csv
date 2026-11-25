@@ -1,0 +1,13 @@
+,unique_values
+Gender,2
+Churn,2
+Subscription Type,3
+Contract Length,3
+Support Calls,11
+Usage Frequency,30
+Last Interaction,30
+Payment Delay,31
+Age,48
+Tenure,60
+Total Spend,901
+CustomerID,64374

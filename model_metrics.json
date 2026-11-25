@@ -1,0 +1,94 @@
+{
+  "dataset": {
+    "source": "Muhammad Shahid Azeem - Customer Churn Dataset",
+    "kaggle_url": "https://www.kaggle.com/datasets/muhammadshahidazeem/customer-churn-dataset",
+    "shape": [
+      64374,
+      12
+    ],
+    "target": "Churn",
+    "identifier": "CustomerID",
+    "missing_cells": 0,
+    "duplicate_rows": 0,
+    "duplicate_customer_ids": 0,
+    "exact_duplicate_feature_rows": 0,
+    "conflicting_duplicate_feature_labels": 0,
+    "simple_support_calls_ge5_accuracy": 0.6611054152297512
+  },
+  "split": {
+    "train_full_rows": 51499,
+    "test_rows": 12875,
+    "validation_rows": 10300,
+    "cross_validation_subset_rows": 30000,
+    "random_state": 42,
+    "oversampling_used": false,
+    "synthetic_generation_used": false,
+    "test_set_used_for_selection": false
+  },
+  "selected_model": "LightGBM",
+  "hyperparameter_tuning": {
+    "best_params": {
+      "model__learning_rate": 0.1,
+      "model__num_leaves": 31
+    },
+    "best_validation_accuracy": 0.9995630961916552
+  },
+  "threshold_selection": {
+    "method": "5-fold out-of-fold predictions on 80% training split",
+    "metric": "accuracy",
+    "threshold": 0.34500000000000003
+  },
+  "baseline": {
+    "accuracy": 0.5262912621359224,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "roc_auc": 0.5
+  },
+  "final_test": {
+    "accuracy": 0.9998446601941747,
+    "precision": 0.9996721848877234,
+    "recall": 1.0,
+    "f1": 0.9998360655737705,
+    "roc_auc": 1.0
+  },
+  "confusion_matrix": [
+    [
+      6774,
+      2
+    ],
+    [
+      0,
+      6099
+    ]
+  ],
+  "classification_report": {
+    "0": {
+      "precision": 1.0,
+      "recall": 0.9997048406139315,
+      "f1-score": 0.9998523985239852,
+      "support": 6776.0
+    },
+    "1": {
+      "precision": 0.9996721848877234,
+      "recall": 1.0,
+      "f1-score": 0.9998360655737705,
+      "support": 6099.0
+    },
+    "accuracy": 0.9998446601941747,
+    "macro avg": {
+      "precision": 0.9998360924438616,
+      "recall": 0.9998524203069658,
+      "f1-score": 0.9998442320488778,
+      "support": 12875.0
+    },
+    "weighted avg": {
+      "precision": 0.9998447111169106,
+      "recall": 0.9998446601941747,
+      "f1-score": 0.9998446614627534,
+      "support": 12875.0
+    }
+  },
+  "model_path": "models/churn_model.pkl",
+  "target_90_percent_achieved": true
+}
