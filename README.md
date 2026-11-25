@@ -44,6 +44,7 @@ All project row counts and results refer to the 64,374-row CSV present in `datas
 | `scripts/evaluate_model.py` | Re-evaluate the saved model and dummy baseline on the fixed holdout |
 | `scripts/data_leakage_audit.py` | Training/validation-only importance and leakage audit |
 | `scripts/test_app_ui.py` | Streamlit single-customer, batch, download and invalid-input checks |
+| `scripts/test_app_predictions.py` | Direct single/batch model prediction and batch-input validation checks (no browser session) |
 | `scripts/eda_analysis.py` | Regenerate EDA tables and figures under `eda/` |
 | `scripts/analyze_target_pattern.py` | Inspect target structure and simple feature rules |
 | `app/app.py` | Streamlit single-customer and batch prediction UI |
@@ -179,7 +180,7 @@ python scripts/evaluate_model.py
 python scripts/data_leakage_audit.py
 python scripts/analyze_target_pattern.py
 python scripts/test_app_predictions.py
-python scripts/test_app_ui.py
+python scripts/test_app_ui.py  # Streamlit AppTest harness; no separate browser session
 ```
 
 ## Run EDA
