@@ -294,7 +294,7 @@ if selected_name == "LightGBM":
     selected_pipeline = clone(search.best_estimator_)
     tuning_summary = {
         "best_params": search.best_params_,
-        "best_validation_accuracy": float(search.best_score_),
+        "best_cv_accuracy": float(search.best_score_),
     }
     print("LightGBM tuning:", tuning_summary, flush=True)
 elif selected_name == "K-Nearest Neighbors":
@@ -320,7 +320,7 @@ elif selected_name == "K-Nearest Neighbors":
     ])
     tuning_summary = {
         "best_params": search.best_params_,
-        "best_validation_accuracy": float(search.best_score_),
+        "best_cv_accuracy": float(search.best_score_),
     }
 
 oof_probability = cross_val_predict(

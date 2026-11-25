@@ -32,7 +32,7 @@
       "model__learning_rate": 0.1,
       "model__num_leaves": 31
     },
-    "best_validation_accuracy": 0.9995630961916552
+    "best_cv_accuracy": 0.9995630961916552
   },
   "threshold_selection": {
     "method": "5-fold out-of-fold predictions on 80% training split",
