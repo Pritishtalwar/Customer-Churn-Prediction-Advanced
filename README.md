@@ -38,10 +38,12 @@ The 505,207-row value resulted from accidentally combining the 440,833-row train
 5. Fit preprocessing only on training data
 6. Compare 11 classification models
 7. Use 3-fold cross-validation
-8. Select threshold and model using validation data only
-9. Evaluate once on the untouched test set
-10. Save the complete fitted pipeline
-11. Run the Streamlit dashboard
+8. Select model and hyperparameters using validation/training folds only
+9. Select and freeze the threshold using 5-fold OOF predictions on the 80% training split
+10. Rebuild the selected pipeline with best parameters and refit on all 51,499 training rows
+11. Evaluate once on the untouched test set
+12. Save the complete fitted pipeline
+13. Run the Streamlit dashboard
 
 ## Final Results
 
@@ -60,15 +62,15 @@ Confusion matrix:
  [   0, 6099]]
 ```
 
-The model was selected using validation data and evaluated once on the untouched test set.
+LightGBM was rebuilt with the GridSearchCV best parameters and fitted on all 51,499 rows in the 80% training split. The threshold was frozen from training-only 5-fold out-of-fold predictions before evaluation on the untouched 12,875-row test split. The test set was not used for model, parameter, threshold, or feature selection.
 
 ### Metric separation
 
 - **Cross-validation:** 3-fold accuracy and ROC-AUC in `model_comparison.csv`
-- **Validation:** held-out 20% of the 80% training split
+- **Validation:** held-out 20% of the 80% training split, used for model comparison
 - **OOF threshold:** 5-fold out-of-fold predictions from the full 80% training split
 - **Untouched test:** 12,875 rows evaluated once after model and threshold selection
-- **Selected threshold:** 0.345
+- **Selected threshold:** 0.345 (saved in `model_metrics.json` and used by the app)
 
 ## Target-Pattern and Leakage Review
 
@@ -78,7 +80,9 @@ The model was selected using validation data and evaluated once on the untouched
 - A simple `Support Calls >= 5` rule achieved 66.11% accuracy.
 - A `Payment Delay >= 15` rule achieved 76.60% accuracy.
 - Shallow decision trees reached 94.25% and 95.56% validation accuracy at depths 4 and 5.
-- These findings indicate strong rule-like target structure, but they are not enough to prove target leakage. The data contains no conflicting duplicate labels or identifier leakage in the implemented pipeline.
+- The CSV does not include target-generation logic, so its provenance cannot be verified here. `CustomerID` is excluded from model inputs, but churn is strongly ordered by ID: churn rates across ascending ID deciles are 25.9%, 26.5%, 25.3%, 25.3%, 26.1%, 25.8%, 25.9%, 92.9%, 100%, and 100%. ID/churn correlation is 0.530 (descriptive audit only). This can explain very high random-split scores and limits claims about future customers or other sources. It is an ordering/provenance concern, not proof of direct model leakage.
+- No exact duplicate feature rows, conflicting labels for identical feature rows, duplicate IDs, or duplicate full rows were found. The single-CSV stratified split has no shared row samples; related source records cannot be ruled out because no external customer/time key is available.
+- Training-only permutation importance ranks Payment Delay and Support Calls highest. No numeric feature pairs had absolute correlation >= 0.90. No derived features or feature removals were justified, so the original 10 predictors remain.
 
 ## Model Comparison
 

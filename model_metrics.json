@@ -25,6 +25,7 @@
     "synthetic_generation_used": false,
     "test_set_used_for_selection": false
   },
+  "final_model_fit_rows": 51499,
   "selected_model": "LightGBM",
   "hyperparameter_tuning": {
     "best_params": {
@@ -36,7 +37,92 @@
   "threshold_selection": {
     "method": "5-fold out-of-fold predictions on 80% training split",
     "metric": "accuracy",
-    "threshold": 0.34500000000000003
+    "threshold": 0.34500000000000003,
+    "frozen_before_test_evaluation": true
+  },
+  "feature_diagnostics_training_only": {
+    "permutation_importance_accuracy_drop": {
+      "Payment Delay": {
+        "mean_accuracy_drop": 0.29009624782358234,
+        "std_accuracy_drop": 0.00035675809315440795
+      },
+      "Support Calls": {
+        "mean_accuracy_drop": 0.15255959662647176,
+        "std_accuracy_drop": 0.0010860504561984823
+      },
+      "Tenure": {
+        "mean_accuracy_drop": 0.11636471905603345,
+        "std_accuracy_drop": 0.000424339201488251
+      },
+      "Gender": {
+        "mean_accuracy_drop": 0.07954199757924103,
+        "std_accuracy_drop": 0.0010964163323253196
+      },
+      "Usage Frequency": {
+        "mean_accuracy_drop": 0.06779419665106763,
+        "std_accuracy_drop": 0.0004443064215287124
+      },
+      "Total Spend": {
+        "mean_accuracy_drop": 0.04694589538955448,
+        "std_accuracy_drop": 0.00046557876226346694
+      },
+      "Contract Length": {
+        "mean_accuracy_drop": 0.040402079004770296,
+        "std_accuracy_drop": 0.00033905644391048467
+      },
+      "Age": {
+        "mean_accuracy_drop": 0.03691333812307033,
+        "std_accuracy_drop": 0.0003012375975771972
+      },
+      "Subscription Type": {
+        "mean_accuracy_drop": 0.002517848243007973,
+        "std_accuracy_drop": 0.00016038514266769635
+      },
+      "Last Interaction": {
+        "mean_accuracy_drop": 5.8253558321526754e-05,
+        "std_accuracy_drop": 1.585461039882534e-05
+      }
+    },
+    "model_feature_importance": {
+      "numeric__Usage Frequency": 689,
+      "numeric__Tenure": 490,
+      "numeric__Total Spend": 323,
+      "numeric__Support Calls": 304,
+      "numeric__Payment Delay": 260,
+      "numeric__Age": 239,
+      "categorical__Contract Length_Annual": 238,
+      "categorical__Gender_Female": 140,
+      "categorical__Subscription Type_Basic": 138,
+      "categorical__Contract Length_Monthly": 138,
+      "numeric__Last Interaction": 20,
+      "categorical__Gender_Male": 13,
+      "categorical__Contract Length_Quarterly": 6,
+      "categorical__Subscription Type_Standard": 2,
+      "categorical__Subscription Type_Premium": 0
+    },
+    "numeric_pairs_abs_correlation_ge_0_90": [],
+    "feature_engineering_added": [],
+    "feature_selection_change": false,
+    "rationale": "No engineered features or feature removals were justified; numeric feature pairs were checked on training data and permutation importance was also computed on training data only."
+  },
+  "leakage_audit": {
+    "customer_id_excluded_from_features": true,
+    "train_test_customer_id_overlap": 0,
+    "train_test_feature_row_overlap": 0,
+    "customer_id_churn_correlation_descriptive_only": 0.529831553698128,
+    "churn_rate_by_customer_id_decile": {
+      "0": 0.2590866728797763,
+      "1": 0.26549634923100823,
+      "2": 0.2527574957278235,
+      "3": 0.2527182354768562,
+      "4": 0.2605250893273264,
+      "5": 0.2581948112474755,
+      "6": 0.2589313451382417,
+      "7": 0.9291595463725338,
+      "8": 1.0,
+      "9": 1.0
+    },
+    "interpretation": "CustomerID is excluded, but churn is highly ordered by CustomerID; high-ID deciles are nearly all churn. This suggests target ordering or source generation structure and limits random-split generalization claims. The source data does not establish the target-generation process."
   },
   "baseline": {
     "accuracy": 0.5262912621359224,

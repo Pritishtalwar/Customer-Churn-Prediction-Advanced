@@ -26,7 +26,9 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     roc_auc_score,
+    make_scorer,
 )
+from sklearn.inspection import permutation_importance
 from sklearn.model_selection import (
     GridSearchCV,
     StratifiedKFold,
@@ -287,7 +289,17 @@ if selected_name == "LightGBM":
         n_jobs=-1,
     )
     search.fit(X_fit, y_fit)
-    selected_pipeline = search.best_estimator_
+    # Grid search chooses parameters using only the inner training folds. Build
+    # a fresh pipeline and refit it on the complete 80% training partition.
+    selected_pipeline = Pipeline([
+        ("preprocessing", preprocessor),
+        ("model", LGBMClassifier(
+            **{key.removeprefix("model__"): value for key, value in search.best_params_.items()},
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+            verbose=-1,
+        )),
+    ])
     tuning_summary = {
         "best_params": search.best_params_,
         "best_validation_accuracy": float(search.best_score_),
@@ -306,7 +318,14 @@ elif selected_name == "K-Nearest Neighbors":
         n_jobs=-1,
     )
     search.fit(X_fit, y_fit)
-    selected_pipeline = search.best_estimator_
+    selected_pipeline = Pipeline([
+        ("preprocessing", knn_preprocessor),
+        ("model", KNeighborsClassifier(
+            **{key.removeprefix("model__"): value for key, value in search.best_params_.items()},
+            weights="distance",
+            n_jobs=-1,
+        )),
+    ])
     tuning_summary = {
         "best_params": search.best_params_,
         "best_validation_accuracy": float(search.best_score_),
@@ -330,14 +349,7 @@ for threshold in np.arange(0.30, 0.71, 0.005):
     ))
 best_threshold = max(threshold_results, key=lambda item: item[0])[1]
 
-if tuning_summary:
-    final_model = selected_pipeline
-else:
-    final_pipeline_preprocessor = knn_preprocessor if selected_name == "K-Nearest Neighbors" else preprocessor
-    final_model = Pipeline([
-        ("preprocessing", final_pipeline_preprocessor),
-        ("model", models[selected_name]),
-    ])
+final_model = selected_pipeline
 final_model.fit(X_train_full, y_train_full)
 
 test_probability = final_model.predict_proba(X_test)[:, 1]
@@ -359,6 +371,49 @@ def metric_dict(prediction, probability):
 
 final_metrics = metric_dict(test_prediction, test_probability)
 baseline_metrics = metric_dict(baseline_prediction, baseline_probability)
+
+# Feature diagnostics use training rows only; the untouched test set is never
+# consulted for feature selection or interpretation.
+permutation = permutation_importance(
+    final_model,
+    X_train_full,
+    y_train_full,
+    scoring="accuracy",
+    n_repeats=3,
+    random_state=RANDOM_STATE,
+    n_jobs=-1,
+)
+permutation_importance_summary = {
+    feature: {
+        "mean_accuracy_drop": float(mean),
+        "std_accuracy_drop": float(std),
+    }
+    for feature, mean, std in sorted(
+        zip(X_train_full.columns, permutation.importances_mean, permutation.importances_std),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+}
+feature_importance_summary = {}
+estimator = final_model.named_steps["model"]
+if hasattr(estimator, "feature_importances_"):
+    feature_names = final_model.named_steps["preprocessing"].get_feature_names_out()
+    feature_importance_summary = {
+        name: int(value)
+        for name, value in sorted(
+            zip(feature_names, estimator.feature_importances_),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+    }
+
+numeric_corr = X_train_full.select_dtypes(include=[np.number]).corr().abs()
+high_correlation_pairs = [
+    {"feature_a": a, "feature_b": b, "absolute_correlation": float(numeric_corr.loc[a, b])}
+    for i, a in enumerate(numeric_corr.columns)
+    for b in numeric_corr.columns[i + 1:]
+    if numeric_corr.loc[a, b] >= 0.90
+]
 
 joblib.dump(final_model, ROOT / "models" / "churn_model.pkl")
 
@@ -397,12 +452,43 @@ metrics = {
         "synthetic_generation_used": False,
         "test_set_used_for_selection": False,
     },
+    "final_model_fit_rows": int(len(X_train_full)),
     "selected_model": selected_name,
     "hyperparameter_tuning": tuning_summary,
     "threshold_selection": {
         "method": "5-fold out-of-fold predictions on 80% training split",
         "metric": "accuracy",
         "threshold": float(best_threshold),
+        "frozen_before_test_evaluation": True,
+    },
+    "feature_diagnostics_training_only": {
+        "permutation_importance_accuracy_drop": permutation_importance_summary,
+        "model_feature_importance": feature_importance_summary,
+        "numeric_pairs_abs_correlation_ge_0_90": high_correlation_pairs,
+        "feature_engineering_added": [],
+        "feature_selection_change": False,
+        "rationale": "No engineered features or feature removals were justified; numeric feature pairs were checked on training data and permutation importance was also computed on training data only.",
+    },
+    "leakage_audit": {
+        "customer_id_excluded_from_features": "CustomerID" not in X.columns,
+        "train_test_customer_id_overlap": int(
+            len(set(df.loc[X_train_full.index, "CustomerID"]) & set(df.loc[X_test.index, "CustomerID"]))
+        ),
+        "train_test_feature_row_overlap": int(
+            len(
+                set(map(tuple, X_train_full.to_numpy())).intersection(
+                    set(map(tuple, X_test.to_numpy()))
+                )
+            )
+        ),
+        "customer_id_churn_correlation_descriptive_only": float(df["CustomerID"].corr(y)),
+        "churn_rate_by_customer_id_decile": {
+            str(int(decile)): float(rate)
+            for decile, rate in df.assign(
+                customer_id_decile=pd.qcut(df["CustomerID"], 10, labels=False)
+            ).groupby("customer_id_decile", observed=True)["Churn"].mean().items()
+        },
+        "interpretation": "CustomerID is excluded, but churn is highly ordered by CustomerID; high-ID deciles are nearly all churn. This suggests target ordering or source generation structure and limits random-split generalization claims. The source data does not establish the target-generation process.",
     },
     "baseline": baseline_metrics,
     "final_test": final_metrics,
@@ -426,3 +512,5 @@ print("Selected:", selected_name)
 print("Threshold:", best_threshold)
 print("Baseline:", baseline_metrics)
 print("Final:", final_metrics)
+print("Feature diagnostics:", metrics["feature_diagnostics_training_only"])
+print("Leakage audit:", metrics["leakage_audit"])
