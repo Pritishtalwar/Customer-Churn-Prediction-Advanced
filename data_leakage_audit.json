@@ -1,0 +1,150 @@
+{
+  "dataset": {
+    "rows": 64374,
+    "source_recorded_in_project": "Kaggle: muhammadshahidazeem/customer-churn-dataset",
+    "target_generation_code_or_documentation_present": false,
+    "synthetic_or_rule_generated_status": "Cannot be proven from the CSV or project code. Extremely strong ID ordering and feature-target structure are consistent with possible source ordering or rule-generated/synthetic labels, but are not proof."
+  },
+  "split_and_resampling": {
+    "outer_split": "Stratified 80:20 before model fitting/resampling",
+    "training_rows": 51499,
+    "test_rows": 12875,
+    "fit_rows_for_validation_importance": 41199,
+    "validation_rows_for_permutation_importance": 10300,
+    "random_state": 42,
+    "resampling_or_synthetic_oversampling_in_training_code": false,
+    "resampling_dependency_in_requirements": false,
+    "test_data_used_for_importance": false
+  },
+  "target_and_feature_relationships": {
+    "direct_churn_target_feature_present": "No separate churn date/status source field exists in the 10 model inputs; the CSV does not document how Churn was assigned.",
+    "customer_id_in_model_inputs": false,
+    "customer_id_churn_correlation_descriptive_only_training_rows": 0.5295823738621646,
+    "numeric_predictor_customer_id_correlations_training_rows": {
+      "Payment Delay": 0.289869838641606,
+      "Support Calls": 0.16442333339380238,
+      "Tenure": 0.09779525583294715,
+      "Usage Frequency": -0.061374685017971185,
+      "Age": 0.041037338136958805,
+      "Total Spend": -0.037290051215547515,
+      "Last Interaction": -0.003007885205858577
+    },
+    "churn_rate_by_customer_id_decile": {
+      "0": {
+        "churn_rate": 0.2570873786407767,
+        "rows": 5150
+      },
+      "1": {
+        "churn_rate": 0.26601941747572816,
+        "rows": 5150
+      },
+      "2": {
+        "churn_rate": 0.25650485436893206,
+        "rows": 5150
+      },
+      "3": {
+        "churn_rate": 0.25281553398058254,
+        "rows": 5150
+      },
+      "4": {
+        "churn_rate": 0.26174757281553396,
+        "rows": 5150
+      },
+      "5": {
+        "churn_rate": 0.2577199456205088,
+        "rows": 5149
+      },
+      "6": {
+        "churn_rate": 0.2611650485436893,
+        "rows": 5150
+      },
+      "7": {
+        "churn_rate": 0.9236893203883495,
+        "rows": 5150
+      },
+      "8": {
+        "churn_rate": 1.0,
+        "rows": 5150
+      },
+      "9": {
+        "churn_rate": 1.0,
+        "rows": 5150
+      }
+    },
+    "single_feature_stump_fit_and_validation_accuracy": [
+      {
+        "feature": "Age",
+        "fit_accuracy": 0.5483142794728028,
+        "validation_accuracy": 0.5429126213592232
+      },
+      {
+        "feature": "Gender",
+        "fit_accuracy": 0.5799169882764145,
+        "validation_accuracy": 0.5824271844660194
+      },
+      {
+        "feature": "Tenure",
+        "fit_accuracy": 0.6021990825020025,
+        "validation_accuracy": 0.6062135922330097
+      },
+      {
+        "feature": "Usage Frequency",
+        "fit_accuracy": 0.5833879463093764,
+        "validation_accuracy": 0.5804854368932039
+      },
+      {
+        "feature": "Support Calls",
+        "fit_accuracy": 0.6597247506007428,
+        "validation_accuracy": 0.6610679611650485
+      },
+      {
+        "feature": "Payment Delay",
+        "fit_accuracy": 0.7862326755503775,
+        "validation_accuracy": 0.7842718446601942
+      },
+      {
+        "feature": "Subscription Type",
+        "fit_accuracy": 0.526323454452778,
+        "validation_accuracy": 0.5263106796116505
+      },
+      {
+        "feature": "Contract Length",
+        "fit_accuracy": 0.5403529211874074,
+        "validation_accuracy": 0.5302912621359224
+      },
+      {
+        "feature": "Total Spend",
+        "fit_accuracy": 0.5430714337726644,
+        "validation_accuracy": 0.5551456310679612
+      },
+      {
+        "feature": "Last Interaction",
+        "fit_accuracy": 0.526323454452778,
+        "validation_accuracy": 0.5263106796116505
+      }
+    ],
+    "interpretation": "No input is a documented direct copy of Churn, and CustomerID is excluded. The very strong label ordering by CustomerID and high univariate signal in account/behavior fields warrant concern about source construction, temporal ordering, or target rules. Without source-generation logic, leakage cannot be confirmed or ruled out."
+  },
+  "record_integrity": {
+    "duplicate_full_rows": 0,
+    "duplicate_customer_ids": 0,
+    "duplicate_feature_vectors_excluding_id_and_target": 0,
+    "duplicate_feature_groups_with_conflicting_labels": 0,
+    "train_validation_customer_id_overlap": 0,
+    "train_test_customer_id_overlap": 0,
+    "train_test_feature_vector_overlap": 0
+  },
+  "feature_diagnostics": {
+    "native_importance": "LightGBM split counts from the saved final model, fitted on training rows only; detailed encoded and aggregated CSV reports saved.",
+    "permutation_importance": "Accuracy drop on the 10,300-row validation subset; diagnostic pipeline fitted only on the 41,199-row fit subset.",
+    "diagnostic_validation_accuracy": 0.9998058252427184,
+    "high_numeric_correlation_pairs_abs_ge_0_90_training_only": [],
+    "features_removed_or_added": []
+  },
+  "limitations": [
+    "The Kaggle CSV does not include source code, label-generation rules, a churn date, or a source customer/time key that would establish causal feature timing.",
+    "Random stratified splitting can preserve source ordering structure; it does not test forward-in-time generalization.",
+    "Permutation importance measures predictive dependence on this validation subset, not causality; correlated predictors can share or mask importance.",
+    "A high feature-target association is a warning signal, not proof that a feature was used to construct the target."
+  ]
+}

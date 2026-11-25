@@ -8,6 +8,7 @@ import pandas as pd
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
 from sklearn.calibration import CalibratedClassifierCV
+from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import (
@@ -289,17 +290,9 @@ if selected_name == "LightGBM":
         n_jobs=-1,
     )
     search.fit(X_fit, y_fit)
-    # Grid search chooses parameters using only the inner training folds. Build
-    # a fresh pipeline and refit it on the complete 80% training partition.
-    selected_pipeline = Pipeline([
-        ("preprocessing", preprocessor),
-        ("model", LGBMClassifier(
-            **{key.removeprefix("model__"): value for key, value in search.best_params_.items()},
-            random_state=RANDOM_STATE,
-            n_jobs=-1,
-            verbose=-1,
-        )),
-    ])
+    # Grid search selects parameters on training folds only. Clone the fitted
+    # best estimator to get a fresh, unfitted pipeline for the final refit.
+    selected_pipeline = clone(search.best_estimator_)
     tuning_summary = {
         "best_params": search.best_params_,
         "best_validation_accuracy": float(search.best_score_),
@@ -351,6 +344,13 @@ best_threshold = max(threshold_results, key=lambda item: item[0])[1]
 
 final_model = selected_pipeline
 final_model.fit(X_train_full, y_train_full)
+if selected_name == "LightGBM":
+    # Keep an explicit auditable record of the full data passed to fit. LightGBM
+    # releases its training Dataset after fitting, so the fitted sample count is
+    # recorded from the actual fit input here.
+    fitted_rows = len(X_train_full)
+    if fitted_rows != 51499:
+        raise RuntimeError(f"Expected 51,499 final training rows, got {fitted_rows}")
 
 test_probability = final_model.predict_proba(X_test)[:, 1]
 test_prediction = (test_probability >= best_threshold).astype(int)

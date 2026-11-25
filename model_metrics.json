@@ -176,5 +176,55 @@
     }
   },
   "model_path": "models/churn_model.pkl",
-  "target_90_percent_achieved": true
+  "target_90_percent_achieved": true,
+  "baseline_confusion_matrix": [
+    [
+      6776,
+      0
+    ],
+    [
+      6099,
+      0
+    ]
+  ],
+  "baseline_classification_report": {
+    "0": {
+      "precision": 0.5262912621359224,
+      "recall": 1.0,
+      "f1-score": 0.6896341153121979,
+      "support": 6776.0
+    },
+    "1": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 6099.0
+    },
+    "accuracy": 0.5262912621359224,
+    "macro avg": {
+      "precision": 0.2631456310679612,
+      "recall": 0.5,
+      "f1-score": 0.34481705765609894,
+      "support": 12875.0
+    },
+    "weighted avg": {
+      "precision": 0.27698249260062213,
+      "recall": 0.5262912621359224,
+      "f1-score": 0.36294840895964686,
+      "support": 12875.0
+    }
+  },
+  "evaluation": {
+    "dataset_rows": 64374,
+    "train_rows": 51499,
+    "test_rows": 12875,
+    "test_fraction": 0.2,
+    "random_state": 42,
+    "stratified": true,
+    "customer_id_excluded": true,
+    "threshold": 0.34500000000000003,
+    "threshold_selection_method": "5-fold out-of-fold predictions on 80% training split",
+    "threshold_frozen_before_test_evaluation": true,
+    "test_used_for_model_or_threshold_selection": false
+  }
 }

@@ -1,0 +1,16 @@
+encoded_feature,split_count_importance
+numeric__Age,239
+numeric__Tenure,490
+numeric__Usage Frequency,689
+numeric__Support Calls,304
+numeric__Payment Delay,260
+numeric__Total Spend,323
+numeric__Last Interaction,20
+categorical__Gender_Female,140
+categorical__Gender_Male,13
+categorical__Subscription Type_Basic,138
+categorical__Subscription Type_Premium,0
+categorical__Subscription Type_Standard,2
+categorical__Contract Length_Annual,238
+categorical__Contract Length_Monthly,138
+categorical__Contract Length_Quarterly,6

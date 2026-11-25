@@ -1,6 +1,8 @@
 from pathlib import Path
+import json
 
 import joblib
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -10,6 +12,15 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "dataset" / "customer_churn.csv"
 MODEL = ROOT / "models" / "churn_model.pkl"
 METRICS = ROOT / "model_metrics.json"
+NUMERIC_FEATURES = [
+    "Age",
+    "Tenure",
+    "Usage Frequency",
+    "Support Calls",
+    "Payment Delay",
+    "Total Spend",
+    "Last Interaction",
+]
 
 
 @st.cache_resource
@@ -20,6 +31,49 @@ def load_model():
 @st.cache_data
 def load_data():
     return pd.read_csv(DATA)
+
+
+@st.cache_data
+def load_metrics():
+    return json.loads(METRICS.read_text(encoding="utf-8"))
+
+
+def validate_batch(batch, reference_data, feature_columns):
+    """Return normalized prediction inputs and a user-readable error, if any."""
+    missing = [column for column in feature_columns if column not in batch.columns]
+    if missing:
+        return None, "Missing required columns: " + ", ".join(missing)
+    if batch.empty:
+        return None, "The uploaded CSV has no customer rows."
+
+    validated = batch[feature_columns].copy()
+    for column in NUMERIC_FEATURES:
+        original = validated[column]
+        converted = pd.to_numeric(original, errors="coerce")
+        invalid = converted.isna() | ~np.isfinite(converted.fillna(0))
+        if invalid.any():
+            rows = ", ".join(str(index + 2) for index in np.flatnonzero(invalid.to_numpy())[:5])
+            return None, f"'{column}' must contain finite numeric values (CSV row(s): {rows})."
+        minimum = reference_data[column].min()
+        maximum = reference_data[column].max()
+        out_of_range = (converted < minimum) | (converted > maximum)
+        if out_of_range.any():
+            rows = ", ".join(str(index + 2) for index in np.flatnonzero(out_of_range.to_numpy())[:5])
+            return None, f"'{column}' values must be between {minimum:g} and {maximum:g} (CSV row(s): {rows})."
+        validated[column] = converted
+
+    for column in ("Gender", "Subscription Type", "Contract Length"):
+        values = validated[column].astype("string").str.strip()
+        missing_values = values.isna() | values.eq("")
+        if missing_values.any():
+            return None, f"'{column}' cannot be blank."
+        allowed = set(reference_data[column].dropna().astype(str).unique())
+        unknown = sorted(set(values.astype(str)) - allowed)
+        if unknown:
+            return None, f"Unknown '{column}' value(s): {', '.join(unknown)}. Allowed: {', '.join(sorted(allowed))}."
+        validated[column] = values
+
+    return validated, None
 
 
 st.set_page_config(
@@ -46,9 +100,20 @@ st.markdown(
 if not MODEL.exists():
     st.error("Model not found. Run `python scripts/train_models.py` first.")
     st.stop()
+if not METRICS.exists():
+    st.error("Model configuration not found. Run `python scripts/train_models.py` first.")
+    st.stop()
 
-model = load_model()
-df = load_data()
+try:
+    model = load_model()
+    df = load_data()
+    app_metrics = load_metrics()
+    threshold = float(app_metrics["threshold_selection"]["threshold"])
+    if not 0 <= threshold <= 1:
+        raise ValueError("Saved churn threshold must be between 0 and 1.")
+except Exception as error:
+    st.error(f"Unable to load prediction configuration: {error}")
+    st.stop()
 
 with st.sidebar:
     st.title("Churn Intelligence")
@@ -93,19 +158,13 @@ if page == "Overview":
             color_discrete_map={"Stay": "#94a3b8", "Churn": "#ef4444"},
         )
         fig.update_layout(showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with right:
         st.subheader("Model status")
-        if METRICS.exists():
-            import json
-
-            metrics = json.loads(METRICS.read_text(encoding="utf-8"))
-            st.success(f"Selected: {metrics['selected_model']}")
-            st.metric("Test Accuracy", f"{metrics['final_test']['accuracy']:.1%}")
-            st.metric("Test ROC-AUC", f"{metrics['final_test']['roc_auc']:.1%}")
-        else:
-            st.warning("Run model training to generate metrics.")
+        st.success(f"Selected: {app_metrics['selected_model']}")
+        st.metric("Test Accuracy", f"{app_metrics['final_test']['accuracy']:.1%}")
+        st.metric("Test ROC-AUC", f"{app_metrics['final_test']['roc_auc']:.1%}")
 
 elif page == "Customer Prediction":
     st.subheader("Customer Details")
@@ -173,15 +232,6 @@ elif page == "Customer Prediction":
     if st.button("Predict Churn", type="primary"):
         row = pd.DataFrame([customer])[feature_columns]
         probability = float(model.predict_proba(row)[0, 1])
-        threshold = 0.5
-        if METRICS.exists():
-            import json
-
-            threshold = float(
-                json.loads(METRICS.read_text(encoding="utf-8"))
-                .get("threshold_selection", {})
-                .get("threshold", 0.5)
-            )
 
         a, b = st.columns(2)
         a.metric("Churn Probability", f"{probability:.1%}")
@@ -191,6 +241,7 @@ elif page == "Customer Prediction":
             st.error("This customer is likely to churn.")
         else:
             st.success("This customer is likely to stay.")
+        st.caption(f"Decision threshold: {threshold:.3f}")
 
 else:
     st.subheader("Batch CSV Prediction")
@@ -198,26 +249,20 @@ else:
     if uploaded:
         try:
             batch = pd.read_csv(uploaded)
-            missing = [column for column in feature_columns if column not in batch.columns]
-            if missing:
-                st.error("Missing required columns: " + ", ".join(missing))
+            prediction_inputs, validation_error = validate_batch(
+                batch, df, feature_columns
+            )
+            if validation_error:
+                st.error(validation_error)
             else:
-                probabilities = model.predict_proba(batch[feature_columns])[:, 1]
-                threshold = 0.5
-                if METRICS.exists():
-                    import json
-
-                    threshold = float(
-                        json.loads(METRICS.read_text(encoding="utf-8"))
-                        .get("threshold_selection", {})
-                        .get("threshold", 0.5)
-                    )
+                probabilities = model.predict_proba(prediction_inputs)[:, 1]
                 predictions = (probabilities >= threshold).astype(int)
                 result = batch.copy()
                 result["churn_probability"] = probabilities
                 result["predicted_churn"] = predictions
                 st.success(f"{len(result):,} customers predicted")
-                st.dataframe(result, use_container_width=True)
+                st.caption(f"Decision threshold: {threshold:.3f}")
+                st.dataframe(result, width="stretch")
                 st.download_button(
                     "Download Results",
                     result.to_csv(index=False).encode("utf-8"),
@@ -225,4 +270,4 @@ else:
                     "text/csv",
                 )
         except Exception as error:
-            st.error(f"Prediction failed: {error}")
+            st.error(f"Unable to read the uploaded CSV: {error}")
